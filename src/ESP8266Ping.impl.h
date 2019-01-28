@@ -22,7 +22,11 @@ extern "C" void esp_yield();
 
 PingClass::PingClass() {}
 
-bool PingClass::ping(IPAddress dest, byte count) {
+int PingClass::ping() {
+    if (_success + _errors < _expected_count) return -1;
+    return _success;
+}
+bool PingClass::ping(IPAddress dest, byte count, bool wait) {
     _expected_count = count;
     _errors = 0;
     _success = 0;
@@ -30,20 +34,20 @@ bool PingClass::ping(IPAddress dest, byte count) {
     _avg_time = 0;
 
     memset(&_options, 0, sizeof(struct ping_option));
-
+    
     // Repeat count (how many time send a ping message to destination)
     _options.count = count;
     // Time interval between two ping (seconds??)
     _options.coarse_time = 1;
     // Destination machine
     _options.ip = dest;
-
+    
     // Callbacks
     _options.recv_function = reinterpret_cast<ping_recv_function>(&PingClass::_ping_recv_cb);
     _options.sent_function = NULL; //reinterpret_cast<ping_sent_function>(&_ping_sent_cb);
 
     // Let's go!
-    if(ping_start(&_options)) {
+    if(ping_start(&_options) && wait) {
         // Suspend till the process end
         esp_yield();
     }
@@ -51,11 +55,11 @@ bool PingClass::ping(IPAddress dest, byte count) {
     return (_success > 0);
 }
 
-bool PingClass::ping(const char* host, byte count) {
+bool PingClass::ping(const char* host, byte count, bool wait) {
     IPAddress remote_addr;
 
     if (WiFi.hostByName(host, remote_addr))
-        return ping(remote_addr, count);
+        return ping(remote_addr, count, wait);
 
     return false;
 }
@@ -67,8 +71,8 @@ int PingClass::averageTime() {
 void PingClass::_ping_recv_cb(void *opt, void *resp) {
     // Cast the parameters to get some usable info
     ping_resp*   ping_resp = reinterpret_cast<struct ping_resp*>(resp);
-    //ping_option* ping_opt  = reinterpret_cast<struct ping_option*>(opt);
-
+    ping_option* ping_opt  = reinterpret_cast<struct ping_option*>(opt);
+    
     // Error or success?
     if (ping_resp->ping_err == -1)
         _errors++;
@@ -96,7 +100,7 @@ void PingClass::_ping_recv_cb(void *opt, void *resp) {
     // Is it time to end?
     // Don't using seqno because it does not increase on error
     if (_success + _errors == _expected_count) {
-        _avg_time = _success > 0 ? _avg_time / _success : 0;
+        _avg_time = _avg_time / _expected_count;
 
         DEBUG_PING("Avg resp time %d ms\n", _avg_time);
 

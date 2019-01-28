@@ -37,8 +37,9 @@ class PingClass {
   public:
     PingClass();
 
-    bool ping(IPAddress dest,   byte count = 5);
-    bool ping(const char* host, byte count = 5);
+    bool ping(IPAddress dest,   byte count = 5, bool wait = true);
+    bool ping(const char* host, byte count = 5, bool wait = true);
+    int ping();	// -1 -- in progress, 0 -- fail, 0 < -- Ok
 
     int averageTime();
 
