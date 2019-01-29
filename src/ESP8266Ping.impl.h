@@ -105,11 +105,11 @@ void PingClass::_ping_recv_cb(void *opt, void *resp) {
         DEBUG_PING("Avg resp time %d ms\n", _avg_time);
 
         // Done, return to main functiom
-        esp_schedule();
+        //esp_schedule();
     }
 }
 
-byte PingClass::_expected_count = 0;
-byte PingClass::_errors = 0;
-byte PingClass::_success = 0;
+volatile byte PingClass::_expected_count = 0;
+volatile byte PingClass::_errors = 0;
+volatile byte PingClass::_success = 0;
 int  PingClass::_avg_time = 0;

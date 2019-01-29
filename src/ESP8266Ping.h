@@ -50,7 +50,7 @@ class PingClass {
     IPAddress _dest;
     ping_option _options;
 
-    static byte _expected_count, _errors, _success;
+    volatile static byte _expected_count, _errors, _success;
     static int _avg_time;
 };
 
